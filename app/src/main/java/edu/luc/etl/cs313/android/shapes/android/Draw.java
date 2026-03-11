@@ -5,9 +5,6 @@ import android.graphics.Paint;
 import android.graphics.Paint.Style;
 import edu.luc.etl.cs313.android.shapes.model.*;
 
-/**
- * A Visitor for drawing a shape to an Android canvas.
- */
 public class Draw implements Visitor<Void> {
 
     private final Canvas canvas;
@@ -26,20 +23,16 @@ public class Draw implements Visitor<Void> {
     }
 
     @Override
-    public Void onStrokeColor(final StrokeColor c) {
-        final int savedColor = paint.getColor();
-        paint.setColor(c.getColor());
-        c.getShape().accept(this);
-        paint.setColor(savedColor);
+    public Void onRectangle(final Rectangle r) {
+        canvas.drawRect(0, 0, r.getWidth(), r.getHeight(), paint);
         return null;
     }
 
     @Override
-    public Void onFill(final Fill f) {
-        final Style savedStyle = paint.getStyle();
-        paint.setStyle(Style.FILL);
-        f.getShape().accept(this);
-        paint.setStyle(savedStyle);
+    public Void onLocation(final Location l) {
+        canvas.translate(l.getX(), l.getY());
+        l.getShape().accept(this);
+        canvas.translate(-l.getX(), -l.getY());
         return null;
     }
 
@@ -52,17 +45,11 @@ public class Draw implements Visitor<Void> {
     }
 
     @Override
-    public Void onLocation(final Location l) {
-        canvas.save();
-        canvas.translate(l.getX(), l.getY());
-        l.getShape().accept(this);
-        canvas.restore();
-        return null;
-    }
-
-    @Override
-    public Void onRectangle(final Rectangle r) {
-        canvas.drawRect(0, 0, r.getWidth(), r.getHeight(), paint);
+    public Void onFill(final Fill f) {
+        final Style savedStyle = paint.getStyle();
+        paint.setStyle(Style.FILL_AND_STROKE);
+        f.getShape().accept(this);
+        paint.setStyle(savedStyle);
         return null;
     }
 
@@ -76,8 +63,17 @@ public class Draw implements Visitor<Void> {
     }
 
     @Override
+    public Void onStrokeColor(final StrokeColor c) {
+        final int savedColor = paint.getColor();
+        paint.setColor(c.getColor());
+        c.getShape().accept(this);
+        paint.setColor(savedColor);
+        return null;
+    }
+
+    @Override
     public Void onPolygon(final Polygon s) {
-        final java.util.List<Point> points = s.getPoints();
+        final java.util.List<? extends Point> points = s.getPoints();
         final int size = points.size();
         final float[] pts = new float[size * 4];
         for (int i = 0; i < size; i++) {
